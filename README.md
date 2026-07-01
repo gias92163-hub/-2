@@ -3,22 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>জন্ম সনদ সংশোধন ফরম পুরণ</title>
+    <title>জন্ম সনদ সংশোধন ফরম পূরণ</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- html2pdf.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- html2canvas for Image Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/htmlcanvas.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;700&display=swap');
         
-        /* পিডিএফ তৈরির গোপন স্টাইল যা স্ক্রিনে দেখাবে না */
-        #hidden-pdf-content {
+        /* ডাউনলোডের জন্য আসল ফরমের স্টাইল */
+        #final-form-template {
             font-family: 'Noto Serif Bengali', 'Times New Roman', serif;
             width: 210mm;
             min-height: 297mm;
             padding: 12mm 15mm;
             background: white;
             color: #000;
+            position: absolute;
+            left: -9999px; /* স্ক্রিন থেকে দূরে থাকবে কিন্তু ব্রাউজার রিড করতে পারবে */
+            top: 0;
         }
         .outer-border {
             border: 1px solid #000;
@@ -51,11 +54,11 @@
 </head>
 <body class="bg-slate-100 p-4 md:p-8">
 
-    <!-- মূল ফরম ইন্টারফেস (শুধু এটাই স্ক্রিনে দেখা যাবে) -->
+    <!-- মূল ইউজার ইন্টারফেস (যা স্ক্রিনে দেখা যাবে) -->
     <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg border border-slate-200">
         <div class="text-center mb-6 border-b pb-4">
             <h2 class="text-2xl font-bold text-slate-800">জন্ম সনদ সংশোধন আবেদন পত্র জেনারেটর</h2>
-            <p class="text-sm text-slate-500 mt-1">নিচের বক্সে তথ্যগুলো দিন এবং সরাসরি নিখুঁত PDF ডাউনলোড করুন</p>
+            <p class="text-sm text-slate-500 mt-1">তথ্যগুলো দিয়ে নিচের বাটনে ক্লিক করলেই ছবি ডাউনলোড হয়ে যাবে</p>
         </div>
         
         <div class="space-y-5">
@@ -102,7 +105,6 @@
                 <input type="text" id="in-dob" value="০২/০৫/১৯৯৪" class="w-full border border-slate-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
 
-            <!-- সংশোধনী তথ্য সেকশন -->
             <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
                 <h3 class="font-bold text-md text-blue-700 border-b pb-1">৩| টেবিলের সংশোধনীয় তথ্যাবলী</h3>
                 
@@ -135,7 +137,7 @@
                 
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">জন্মস্থান (বাংলায়)</label>
-                    <input type="text" id="t-9" value="হোল্ডিং নং- ৪২৫ সিকদার পাড়া, ইসলামাবাদ- ৪৭০২" class="w-full border border-slate-300 p-2 rounded bg-white">
+                    <input type="text" id="t-9" value="হোল্ডিং নং- ৪২৫ সিকদার পাড়া, কুতুবদিয়া- ৪৭০২" class="w-full border border-slate-300 p-2 rounded bg-white">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">স্থায়ী ঠিকানার লোকেশন</label>
@@ -143,112 +145,103 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">স্থায়ী ঠিকানা (বাংলায়)</label>
-                    <input type="text" id="t-13" value="হোল্ডিং নং- ৪২৫ আউলিযাবাদ, ইসলামাবাদ- ৪৭০২" class="w-full border border-slate-300 p-2 rounded bg-white">
+                    <input type="text" id="t-13" value="হোল্ডিং নং- ৪২৫ আউলিযাবাদ, কুতুবদিয়া- ৪৭০২" class="w-full border border-slate-300 p-2 rounded bg-white">
                 </div>
             </div>
 
-            <!-- বড় অ্যাকশন বাটন -->
-            <button onclick="generateAndDownloadPDF()" class="w-full mt-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg transition duration-200 transform active:scale-95 text-base flex justify-center items-center gap-2">
+            <!-- ডাউনলোডের মূল বাটন -->
+            <button onclick="downloadAsImage()" class="w-full mt-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg text-base flex justify-center items-center gap-2 cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                হুবহু ফরম্যাট অনুযায়ী PDF ডাউনলোড করুন
+                হুবহু ফরম্যাটে ছবি (JPG) ডাউনলোড করুন
             </button>
         </div>
     </div>
 
 
-    <!-- এই অংশটি স্ক্রিনে সম্পূর্ণ হাইড বা লুকানো থাকবে, কিন্তু ডাউনলোডের সময় হুবহু ছবিতে রূপান্তর হবে -->
-    <div class="hidden">
-        <div id="hidden-pdf-content">
-            <div class="outer-border">
-                
-                <!-- টপ হেডার -->
-                <div class="text-right text-xs font-bold mb-1">( জন্মনি ফরম-৮ )</div>
-                <div class="text-right text-xs space-y-0.5 mb-2">
-                    <div>আবেদনপত্রের আইডি - <span id="lbl-app-id"></span></div>
-                    <div>আবেদনের তারিখ - <span id="lbl-app-date"></span></div>
-                </div>
+    <!-- এই ফরমটি ব্যাকগ্রাউন্ডে রেডি থাকবে এবং ডাউনলোড বাটনে চাপ দিলে ইমেজে কনভার্ট হবে -->
+    <div id="final-form-template">
+        <div class="outer-border">
+            
+            <div class="text-right text-xs font-bold mb-1">( জন্মনি ফরম-৮ )</div>
+            <div class="text-right text-xs space-y-0.5 mb-2">
+                <div>আবেদনপত্রের আইডি - <span id="lbl-app-id"></span></div>
+                <div>আবেদনের তারিখ - <span id="lbl-app-date"></span></div>
+            </div>
 
-                <!-- টাইটেল -->
-                <div class="text-center space-y-1 mb-3">
-                    <h1 class="text-base font-bold" id="lbl-up-name"></h1>
-                    <p class="text-xs" id="lbl-up-address"></p>
-                    <h2 class="text-sm font-bold pt-1 inline-block">জন্ম সনদ সংশোধনের জন্য আবেদনপত্র</h2>
-                    <p class="text-[11px] font-bold">[ বিধি ১৫ দ্রষ্টব্য ]</p>
-                </div>
+            <div class="text-center space-y-1 mb-3">
+                <h1 class="text-base font-bold" id="lbl-up-name"></h1>
+                <p class="text-xs" id="lbl-up-address"></p>
+                <h2 class="text-sm font-bold pt-1 inline-block">জন্ম সনদ সংশোধনের জন্য আবেদনপত্র</h2>
+                <p class="text-[11px] font-bold">[ বিধি ১৫ দ্রষ্টব্য ]</p>
+            </div>
 
-                <!-- জন্ম নিবন্ধন গ্রিড বক্স -->
-                <div class="flex items-center text-xs mb-2">
-                    <div class="w-1/4 font-bold text-xs">জন্ম নিবন্ধন নম্বর:</div>
-                    <div class="w-3/4 border border-black p-1 font-mono tracking-[6px] text-sm font-bold pl-3" id="lbl-br-num"></div>
-                </div>
+            <div class="flex items-center text-xs mb-2">
+                <div class="w-1/4 font-bold text-xs">জন্ম নিবন্ধন নম্বর:</div>
+                <div class="w-3/4 border border-black p-1 font-mono tracking-[6px] text-sm font-bold pl-3" id="lbl-br-num"></div>
+            </div>
 
-                <!-- বেসিক ডিটেইলস -->
-                <div class="text-xs space-y-2 mb-2">
-                    <div class="flex">
-                        <div class="w-1/4 font-bold">জন্ম নিবন্ধনের তারিখ :</div>
-                        <div class="w-1/4"><span id="lbl-br-date"></span></div>
-                        <div class="w-1/2 text-gray-700">(দিন/মাস/বৎসর)</div>
-                    </div>
-                    <div class="flex items-baseline">
-                        <div class="w-1/4 font-bold">১| &nbsp;নিবন্ধিত ব্যক্তির নাম:</div>
-                        <div class="w-3/4 dotted-line font-bold" id="lbl-name"></div>
-                    </div>
-                    <div class="flex">
-                        <div class="w-1/4 font-bold">২| &nbsp;জন্ম তারিখ</div>
-                        <div class="w-1/4"><span id="lbl-dob"></span></div>
-                        <div class="w-1/2 text-gray-700">(দিন/মাস/বৎসর)</div>
-                    </div>
-                    <div class="font-bold pt-1">৩| &nbsp;ভুল তথ্যের বিবরণ ও উহার কারণ:</div>
+            <div class="text-xs space-y-2 mb-2">
+                <div class="flex">
+                    <div class="w-1/4 font-bold">জন্ম নিবন্ধনের তারিখ :</div>
+                    <div class="w-1/4"><span id="lbl-br-date"></span></div>
+                    <div class="w-1/2 text-gray-700">(দিন/মাস/বৎসর)</div>
                 </div>
+                <div class="flex items-baseline">
+                    <div class="w-1/4 font-bold">১| &nbsp;নিবন্ধিত ব্যক্তির নাম:</div>
+                    <div class="w-3/4 dotted-line font-bold" id="lbl-name"></div>
+                </div>
+                <div class="flex">
+                    <div class="w-1/4 font-bold">২| &nbsp;জন্ম তারিখ</div>
+                    <div class="w-1/4"><span id="lbl-dob"></span></div>
+                    <div class="w-1/2 text-gray-700">(দিন/মাস/বৎসর)</div>
+                </div>
+                <div class="font-bold pt-1">৩| &nbsp;ভুল তথ্যের বিবরণ ও উহার কারণ:</div>
+            </div>
 
-                <!-- অফিসিয়াল টেবিল স্ট্রাকচার -->
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="w-[30%]">সংশোধনের বিষয়</th>
-                            <th class="w-[45%]">সংশোধনীয় তথ্য</th>
-                            <th class="w-[25%]">সংশোধনের কারণ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>নামের প্রথম অংশ (ইংরেজি)</td><td id="lbl-t-1" class="font-mono text-[11px]"></td><td>ভুল লিপিবদ্ধ করা হয়েছিল</td></tr>
-                        <tr><td>পিতার নাম ( বাংলা )</td><td id="lbl-t-2"></td><td>ভুল লিপিবদ্ধ করা হয়েছিল</td></tr>
-                        <tr><td>পিতার নাম ( ইংরেজি )</td><td id="lbl-t-3" class="font-mono text-[11px]"></td><td>ভুল লিপিবদ্ধ করা হয়েছিল</td></tr>
-                        <tr><td>মাতার নাম ( বাংলা )</td><td id="lbl-t-4"></td><td>ভুল লিপিবদ্ধ করা হয়েছিল</td></tr>
-                        <tr><td>মাতার নাম ( ইংরেজি )</td><td id="lbl-t-5" class="font-mono text-[11px]"></td><td>ভুল লিপিবদ্ধ করা হয়েছিল</td></tr>
-                        <tr><td>জন্মস্থানের লোকেশন</td><td id="lbl-t-6"></td><td></td></tr>
-                        <tr><td>জন্মস্থানের ওয়ার্ড</td><td>২. পাহাড়িযাখালী, সিকদার পাড়া, উত্তর লরাবাগ</td><td></td></tr>
-                        <tr><td>জন্মস্থান (ইংরেজিতে)</td><td class="font-mono text-[10px]">HOLDING NO- 825 SIKDAR PARA, ISLAMABAD- 4702</td><td></td></tr>
-                        <tr><td>জন্মস্থান (বাংলায়)</td><td id="lbl-t-9"></td><td></td></tr>
-                        <tr><td>স্থায়ী ঠিকানার লোকেশন</td><td id="lbl-t-10"></td><td></td></tr>
-                        <tr><td>স্থায়ী ঠিকানার ওয়ার্ড</td><td>৮. আউলিয়াবাদ, করাচিপাড়া, ওয়ায়েদেরপাড়া</td><td></td></tr>
-                        <tr><td>স্থায়ী ঠিকানা (ইংরেজিতে)</td><td class="font-mono text-[10px]">HOLDING NO- 825 AOWLIYABAD, ISLAMABAD- 4702</td><td></td></tr>
-                        <tr><td>স্থায়ী ঠিকানা (বাংলায়)</td><td id="lbl-t-13"></td><td></td></tr>
-                        <tr><td>বর্তমান ঠিকানার লোকেশন</td><td>ইসলামাবাদ, ঈদগাঁও, কক্সবাজার, চট্টগ্রাম বিভাগ, বাংলাদেশ</td><td></td></tr>
-                        <tr><td>বর্তমান ঠিকানার ওয়ার্ড</td><td>৮. আউলিয়াবাদ, করাচিপাড়া, ওয়ায়েদেরপাড়া</td><td></td></tr>
-                        <tr><td>বর্তমান ঠিকানা (ইংরেজিতে)</td><td class="font-mono text-[10px]">HOLDING NO- 825 AOWLIYABAD, ISLAMABAD- 4702</td><td></td></tr>
-                        <tr><td>বর্তমান ঠিকানা (বাংলায়)</td><td>হোল্ডিং নং- ৪২৫ আউলিয়াবাদ, মনোবাদ- ৪৭৫২</td><td></td></tr>
-                    </tbody>
-                </table>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="w-[30%]">সংশোধনের বিষয়</th>
+                        <th class="w-[45%]">সংশোধনীয় তথ্য</th>
+                        <th class="w-[25%]">সংশোধনের কারণ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>নামের প্রথম অংশ (ইংরেজি)</td><td id="lbl-t-1" class="font-mono text-[11px]"></td><td>ভুল লিপিবদ্ধ করা হয়েছিল</td></tr>
+                    <tr><td>পিতার নাম ( বাংলা )</td><td id="lbl-t-2"></td><td>ভুল লিপিবদ্ধ করা হয়েছিল</td></tr>
+                    <tr><td>পিতার নাম ( ইংরেজি )</td><td id="lbl-t-3" class="font-mono text-[11px]"></td><td>ভুল লিপিবদ্ধ করা হয়েছিল</td></tr>
+                    <tr><td>মাতার নাম ( বাংলা )</td><td id="lbl-t-4"></td><td>ভুল লিপিবদ্ধ করা হয়েছিল</td></tr>
+                    <tr><td>মাতার নাম ( ইংরেজি )</td><td id="lbl-t-5" class="font-mono text-[11px]"></td><td>ভুল লিপিবদ্ধ করা হয়েছিল</td></tr>
+                    <tr><td>জন্মস্থানের লোকেশন</td><td id="lbl-t-6"></td><td></td></tr>
+                    <tr><td>জন্মস্থানের ওয়ার্ড</td><td>২. পাহাড়িযাখালী, সিকদার পাড়া, উত্তর লরাবাগ</td><td></td></tr>
+                    <tr><td>জন্মস্থান (ইংরেজিতে)</td><td class="font-mono text-[10px]">HOLDING NO- 825 SIKDAR PARA, ISLAMABAD- 4702</td><td></td></tr>
+                    <tr><td>জন্মস্থান (বাংলায়)</td><td id="lbl-t-9"></td><td></td></tr>
+                    <tr><td>স্থায়ী ঠিকানার লোকেশন</td><td id="lbl-t-10"></td><td></td></tr>
+                    <tr><td>স্থায়ী ঠিকানার ওয়ার্ড</td><td>৮. আউলিয়াবাদ, করাচিপাড়া, ওয়ায়েদেরপাড়া</td><td></td></tr>
+                    <tr><td>স্থায়ী ঠিকানা (ইংরেজিতে)</td><td class="font-mono text-[10px]">HOLDING NO- 825 AOWLIYABAD, ISLAMABAD- 4702</td><td></td></tr>
+                    <tr><td>স্থায়ী ঠিকানা (বাংলায়)</td><td id="lbl-t-13"></td><td></td></tr>
+                    <tr><td>বর্তমান ঠিকানার লোকেশন</td><td>ইসলামাবাদ, ঈদগাঁও, কক্সবাজার, চট্টগ্রাম বিভাগ, বাংলাদেশ</td><td></td></tr>
+                    <tr><td>বর্তমান ঠিকানার ওয়ার্ড</td><td>৮. আউলিয়াবাদ, করাচিপাড়া, ওয়ায়েদেরপাড়া</td><td></td></tr>
+                    <tr><td>বর্তমান ঠিকানা (ইংরেজিতে)</td><td class="font-mono text-[10px]">HOLDING NO- 825 AOWLIYABAD, ISLAMABAD- 4702</td><td></td></tr>
+                    <tr><td>বর্তমান ঠিকানা (বাংলায়)</td><td>হোল্ডিং নং- ৪২৫ আউলিয়াবাদ, মনোবাদ- ৪৭৫২</td><td></td></tr>
+                </tbody>
+            </table>
 
-                <!-- ঘোষণা -->
-                <div class="mt-4 text-xs flex items-baseline">
-                    <span class="font-bold mr-2">৪|</span>
-                    <p class="font-bold text-sm">ঘোষণাঃ আমি স্বজ্ঞানে ঘোষণা করিতেছি যে উপরোক্ত তথ্য সত্য।</p>
-                </div>
-                
-                <!-- সিগনেচার সেকশন -->
-                <div class="mt-16 flex justify-between text-xs">
-                    <div class="text-center"><p class="border-t border-black pt-1 w-28">যাচাইকারীর স্বাক্ষর</p></div>
-                    <div class="text-center"><p class="border-t border-black pt-1 w-40">আবেদনকারীর স্বাক্ষর/টিপসই</p></div>
-                </div>
+            <div class="mt-4 text-xs flex items-baseline">
+                <span class="font-bold mr-2">৪|</span>
+                <p class="font-bold text-sm">ঘোষণাঃ আমি স্বজ্ঞানে ঘোষণা করিতেছি যে উপরোক্ত তথ্য সত্য।</p>
+            </div>
+            
+            <div class="mt-16 flex justify-between text-xs">
+                <div class="text-center"><p class="border-t border-black pt-1 w-28">যাচাইকারীর স্বাক্ষর</p></div>
+                <div class="text-center"><p class="border-t border-black pt-1 w-40">আবেদনকারীর স্বাক্ষর/টিপসই</p></div>
             </div>
         </div>
     </div>
 
-    <!-- JavaScript লজিক -->
+    <!-- স্ক্রিপ্ট লাইব্রেরি লোড করা এবং লজিক -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script>
-        // ফরম থেকে ডাটা ম্যাপ করার অ্যারে
         const fieldMap = [
             {in: 'in-app-id', lbl: 'lbl-app-id'},
             {in: 'in-app-date', lbl: 'lbl-app-date'},
@@ -269,27 +262,31 @@
             {in: 't-13', lbl: 'lbl-t-13'}
         ];
 
-        function generateAndDownloadPDF() {
-            // ১. ব্যাকগ্রাউন্ডের গোপন ফরম্যাটে সব ইনপুট পুশ করা হচ্ছে
+        function downloadAsImage() {
+            // ১. ইনপুটের ডাটাগুলো ব্যাকগ্রাউন্ড ফরম্যাটে সেট করা
             fieldMap.forEach(item => {
                 const inputVal = document.getElementById(item.in).value;
                 document.getElementById(item.lbl).innerText = inputVal;
             });
 
-            // ২. পিডিএফ জেনারেট করার কনফিগারেশন (উচ্চ কোয়ালিটি)
-            const element = document.getElementById('hidden-pdf-content');
+            // ২. ব্যাকগ্রাউন্ড এলিমেন্ট সিলেক্ট করা
+            const targetElement = document.getElementById('final-form-template');
             const appId = document.getElementById('in-app-id').value || 'Form';
-            
-            const opt = {
-                margin:       [10, 10, 10, 10],
-                filename:     `Sonsodhon_Form_${appId}.pdf`,
-                image:        { type: 'jpeg', quality: 1.0 },
-                html2canvas:  { scale: 3, useCORS: true, letterRendering: true, logging: false },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
 
-            // ৩. প্রসেস শুরু এবং ডাউনলোড
-            html2pdf().set(opt).from(element).save();
+            // ৩. ইমেজ কনভার্ট এবং সরাসরি ডাউনলোড ট্রিপার করা
+            html2canvas(targetElement, {
+                scale: 2, // ক্লিন ইমেজের জন্য ডাবল কোয়ালিটি
+                useCORS: true
+            }).then(canvas => {
+                const image = canvas.toDataURL("image/jpeg", 1.0);
+                const link = document.createElement('a');
+                link.download = `Form_${appId}.jpg`;
+                link.href = image;
+                link.click();
+            }).catch(err => {
+                alert("ডাউনলোডে সমস্যা হচ্ছে, আবার চেষ্টা করুন!");
+                console.error(err);
+            });
         }
     </script>
 </body>
